@@ -180,8 +180,22 @@
     document.body.appendChild(overlay);
   };
 
+  (function() {
+    if (window.location.pathname.indexOf('/dashboard') !== -1) {
+      fetch('/api/ui_settings/', { credentials: 'include' })
+        .then(r => r.json())
+        .then(data => {
+          const u = data.user;
+          if (u && !u.is_superuser && !u.is_staff) {
+            window.location.replace('/documents');
+          }
+        })
+        .catch(() => {});
+    }
+  })();
+
   function init() {
-    window.aiEnabled = false; window.useOrigene = true; window.useMag = true;
+    window.aiEnabled = false; window.useOrigene = true; window.useMag = false;
     
     const waitForSidebar = setInterval(() => {
       const sidebar = document.querySelector('app-sidebar nav, .sidebar, aside');
@@ -189,16 +203,14 @@
         clearInterval(waitForSidebar);
         const p = document.createElement('div');
         p.style.cssText = 'padding:12px 16px;border-bottom:1px solid #e8eaed;background:#f8f9fa';
-        p.innerHTML = '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:8px"><input type="checkbox" id="pngx-ai-enabled" style="width:16px;height:16px"><span style="font-size:13px;font-weight:600">Cerca con AI</span></label><div id="pngx-sources" style="display:none;padding-left:24px"><div style="display:flex;gap:16px;align-items:center"><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="pngx-toggle-origene" checked style="width:14px;height:14px"><span style="font-size:12px">ORIGENE</span></label><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="pngx-toggle-mag" checked style="width:14px;height:14px"><span style="font-size:12px;color:#e65100">Magisterium</span></label></div></div>';
+        p.innerHTML = '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:8px"><input type="checkbox" id="pngx-ai-enabled" style="width:16px;height:16px"><span style="font-size:13px;font-weight:600">Cerca con AI</span></label>';
         const docLink = sidebar.querySelector('a[routerlink="/documents"], a[href*="documents"]');
         if (docLink && docLink.parentElement) {
           docLink.parentElement.insertAdjacentElement('afterend', p);
         } else {
           sidebar.insertBefore(p, sidebar.firstChild);
         }
-        document.getElementById('pngx-ai-enabled').addEventListener('change', (e) => { window.aiEnabled = e.target.checked; document.getElementById('pngx-sources').style.display = e.target.checked ? 'block' : 'none'; });
-        document.getElementById('pngx-toggle-origene').addEventListener('change', (e) => { window.useOrigene = e.target.checked; });
-        document.getElementById('pngx-toggle-mag').addEventListener('change', (e) => { window.useMag = e.target.checked; });
+        document.getElementById('pngx-ai-enabled').addEventListener('change', (e) => { window.aiEnabled = e.target.checked; window.useOrigene = true; window.useMag = false; });
       }
     }, 200);
 
