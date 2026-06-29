@@ -47,7 +47,7 @@ server {
     }
 	location /api/mag-search {
     	proxy_pass https://www.magisterium.com/api/v1/search;
-    	proxy_set_header Authorization "Bearer sk_marcom_be587ef6004274c1d523d73ae5945542a919bd8ebd6bc1fcd0dba38396b6a45d";
+    	proxy_set_header Authorization "Bearer ${MAGISTERIUM_API_KEY}";
    		proxy_set_header Content-Type "application/json";
     	proxy_set_header Host www.magisterium.com;
    	 	add_header Access-Control-Allow-Origin "*";
@@ -56,7 +56,7 @@ server {
    }
     location /api/regolo/ {
         proxy_pass https://api.regolo.ai/v1/;
-        proxy_set_header Authorization "Bearer sk-EmXrZL8Zi8i2xktE5MV1Xg";
+        proxy_set_header Authorization "Bearer ${REGOLO_API_KEY}";
         proxy_set_header Content-Type "application/json";
         proxy_set_header Host api.regolo.ai;
         proxy_ssl_server_name on;
