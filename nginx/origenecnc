@@ -1,0 +1,107 @@
+server {
+    listen 80;
+    server_name origenecnc.com www.origenecnc.com;
+    return 301 https://origenecnc.com$request_uri;
+}
+server {
+    listen 443 ssl;
+    server_name www.origenecnc.com;
+    ssl_certificate /etc/letsencrypt/live/origenecnc.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/origenecnc.com/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+    return 301 https://origenecnc.com$request_uri;
+}
+server {
+    listen 443 ssl;
+    server_name origenecnc.com;
+    ssl_certificate /etc/letsencrypt/live/origenecnc.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/origenecnc.com/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+    client_max_body_size 256M;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    location /setup/ { return 404; }
+    location /api/schema/ { return 404; }
+    location /api/schema/view/ { return 404; }
+
+
+    location /sfondo.jpg {
+        alias /var/www/html/sfondo.jpg;
+        auth_basic off;
+
+    }
+
+    location /origene-login.css {
+        alias /var/www/html/origene-login.css;
+        add_header Content-Type "text/css";
+        auth_basic off;
+    }
+
+    location /ai-widget.js {
+        alias /opt/paperless/paperless-ai-widget.js;
+        add_header Content-Type application/javascript;
+    }
+	location /api/mag-search {
+    	proxy_pass https://www.magisterium.com/api/v1/search;
+    	proxy_set_header Authorization "Bearer sk_marcom_be587ef6004274c1d523d73ae5945542a919bd8ebd6bc1fcd0dba38396b6a45d";
+   		proxy_set_header Content-Type "application/json";
+    	proxy_set_header Host www.magisterium.com;
+   	 	add_header Access-Control-Allow-Origin "*";
+    	add_header Access-Control-Allow-Methods "POST, OPTIONS";
+    	add_header Access-Control-Allow-Headers "Content-Type";
+   }
+    location /api/regolo/ {
+        proxy_pass https://api.regolo.ai/v1/;
+        proxy_set_header Authorization "Bearer sk-EmXrZL8Zi8i2xktE5MV1Xg";
+        proxy_set_header Content-Type "application/json";
+        proxy_set_header Host api.regolo.ai;
+        proxy_ssl_server_name on;
+        proxy_read_timeout 120s;
+        add_header Access-Control-Allow-Origin "*";
+        add_header Access-Control-Allow-Methods "POST, OPTIONS";
+        add_header Access-Control-Allow-Headers "Content-Type";
+    }
+
+    location /admin {
+        proxy_pass http://127.0.0.1:8090;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 60s;
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_http_version 1.1;
+        proxy_read_timeout 300s;
+        sub_filter '</head>' '<link rel="stylesheet" href="/origene-login.css"></head>';
+        sub_filter '<body' '<body';
+        sub_filter '</body>' '<div id="pngx-origene-header"><h1>ORIGENE</h1><p>AI Data Mining</p></div><script src="https://origenecnc.com/ai-widget.js?v=54"></script></body>';
+        sub_filter_once off;
+        proxy_set_header Accept-Encoding "";
+    }
+}
+
+server {
+    listen 80;
+    server_name paperless.origenecnc.com;
+    return 301 https://origenecnc.com$request_uri;
+}
+server {
+    listen 443 ssl;
+    server_name paperless.origenecnc.com;
+    ssl_certificate /etc/letsencrypt/live/paperless.origenecnc.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/paperless.origenecnc.com/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+    return 301 https://origenecnc.com$request_uri;
+}

@@ -1,0 +1,118 @@
+services:
+  broker:
+    image: docker.io/library/redis:8
+    restart: unless-stopped
+    volumes:
+      - redisdata:/data
+  db:
+    image: docker.io/library/postgres:18
+    restart: unless-stopped
+    volumes:
+      - pgdata:/var/lib/postgresql
+    environment:
+      POSTGRES_DB: paperless
+      POSTGRES_USER: paperless
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  webserver:
+    image: ghcr.io/paperless-ngx/paperless-ngx:latest
+    restart: unless-stopped
+    depends_on:
+      - db
+      - broker
+    ports:
+      - "8000:8000"
+    volumes:
+      - data:/usr/src/paperless/data
+      - media:/usr/src/paperless/media
+      - scratch:/tmp/paperless
+      - ./export:/usr/src/paperless/export
+      - ./consume:/usr/src/paperless/consume
+    env_file: docker-compose.env
+    environment:
+      PAPERLESS_REDIS: redis://broker:6379
+      PAPERLESS_DBHOST: db
+      PAPERLESS_URL: https://origenecnc.com
+      PAPERLESS_CSRF_TRUSTED_ORIGINS: https://origenecnc.com,https://paperless.origenecnc.com
+      PAPERLESS_SCRATCH_DIR: /tmp/paperless
+  worker:
+    image: ghcr.io/paperless-ngx/paperless-ngx:latest
+    restart: unless-stopped
+    depends_on:
+      - db
+      - broker
+    command: celery --app paperlessngx worker --loglevel INFO
+    volumes:
+      - data:/usr/src/paperless/data
+      - media:/usr/src/paperless/media
+      - scratch:/tmp/paperless
+      - ./export:/usr/src/paperless/export
+      - ./consume:/usr/src/paperless/consume
+    env_file: docker-compose.env
+    environment:
+      PAPERLESS_REDIS: redis://broker:6379
+      PAPERLESS_DBHOST: db
+      PAPERLESS_URL: https://origenecnc.com
+      PAPERLESS_CSRF_TRUSTED_ORIGINS: https://origenecnc.com,https://paperless.origenecnc.com
+      PAPERLESS_SCRATCH_DIR: /tmp/paperless
+  scheduler:
+    image: ghcr.io/paperless-ngx/paperless-ngx:latest
+    restart: unless-stopped
+    depends_on:
+      - db
+      - broker
+    command: celery --app paperlessngx beat --loglevel INFO
+    volumes:
+      - data:/usr/src/paperless/data
+      - media:/usr/src/paperless/media
+      - scratch:/tmp/paperless
+      - ./export:/usr/src/paperless/export
+      - ./consume:/usr/src/paperless/consume
+    env_file: docker-compose.env
+    environment:
+      PAPERLESS_REDIS: redis://broker:6379
+      PAPERLESS_DBHOST: db
+      PAPERLESS_URL: https://origenecnc.com
+      PAPERLESS_CSRF_TRUSTED_ORIGINS: https://origenecnc.com,https://paperless.origenecnc.com
+      PAPERLESS_SCRATCH_DIR: /tmp/paperless
+  wallabag:
+    image: wallabag/wallabag
+    restart: unless-stopped
+    environment:
+      - SYMFONY__ENV__DATABASE_DRIVER=pdo_sqlite
+      - SYMFONY__ENV__FOSUSER_REGISTRATION=false
+      - SYMFONY__ENV__DOMAIN_NAME=http://45.138.202.132:8081
+      - SYMFONY__ENV__ENV=prod
+    ports:
+      - "8081:80"
+    volumes:
+      - wallabag_data:/var/www/wallabag/data
+      - wallabag_images:/var/www/wallabag/web/assets/images
+  paperless-ai:
+    image: clusterzx/paperless-ai:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - paperless_ai_data:/app/data
+    environment:
+      PAPERLESS_AI_INITIAL_SETUP: "no"
+      PAPERLESS_API_URL: http://webserver:8000/api
+      PAPERLESS_API_TOKEN: ${PAPERLESS_API_TOKEN}
+      AI_PROVIDER: custom
+      CUSTOM_API_KEY: ${CUSTOM_API_KEY}
+      CUSTOM_BASE_URL: https://api.regolo.ai/v1
+      CUSTOM_MODEL: Llama-3.3-70B-Instruct
+      ADD_AI_PROCESSED_TAG: "yes"
+      SCAN_INTERVAL: "*/30 * * * *"
+      PROCESS_PREDEFINED_DOCUMENTS: "yes"
+      TAGS: "Documenti P. Mario"
+      PAPERLESS_BASE_URL: https://paperless.origenecnc.com
+volumes:
+  data:
+  media:
+  pgdata:
+  redisdata:
+  scratch:
+  wallabag_data:
+  wallabag_images:
+  paperless_ai_data:
