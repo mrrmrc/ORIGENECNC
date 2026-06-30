@@ -409,8 +409,18 @@
     }
   }
 
+  window._pngxCache = window._pngxCache || new Map();
+
   async function searchOrigene(query) {
-    const kw = await extractKeywords(query);
+    const cacheKey = query.trim().toLowerCase();
+    const cached = window._pngxCache.get(cacheKey);
+    if (cached && (Date.now() - cached.ts) < 300000) {
+      return cached.value;
+    }
+
+    const wordCount = query.trim().split(/\s+/).length;
+    const kw = (wordCount <= 4) ? query : await extractKeywords(query);
+
     let res = await fetch(`${BASE}/api/documents/?search=${encodeURIComponent(kw)}&page_size=50`, {credentials:'include'});
     if (!res.ok) throw new Error('API error ' + res.status);
     let data = await res.json();
@@ -421,7 +431,9 @@
       docs = (data.results||[]);
     }
     const answer = await callRegolo(query, docs.slice(0,6));
-    return {docs, answer};
+    const result = {docs, answer};
+    window._pngxCache.set(cacheKey, {value: result, ts: Date.now()});
+    return result;
   }
 
   async function searchMagisterium(query) {
