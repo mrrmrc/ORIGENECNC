@@ -20,7 +20,7 @@ services:
       - db
       - broker
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     volumes:
       - data:/usr/src/paperless/data
       - media:/usr/src/paperless/media
@@ -83,7 +83,7 @@ services:
       - SYMFONY__ENV__DOMAIN_NAME=http://45.138.202.132:8081
       - SYMFONY__ENV__ENV=prod
     ports:
-      - "8081:80"
+      - "127.0.0.1:8081:80"
     volumes:
       - wallabag_data:/var/www/wallabag/data
       - wallabag_images:/var/www/wallabag/web/assets/images

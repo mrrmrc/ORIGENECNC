@@ -45,17 +45,20 @@ server {
         alias /opt/paperless/paperless-ai-widget.js;
         add_header Content-Type application/javascript;
     }
-	location /api/mag-search {
-    	proxy_pass https://www.magisterium.com/api/v1/search;
-    	proxy_set_header Authorization "Bearer ${MAGISTERIUM_API_KEY}";
-   		proxy_set_header Content-Type "application/json";
-    	proxy_set_header Host www.magisterium.com;
-   	 	add_header Access-Control-Allow-Origin "*";
-    	add_header Access-Control-Allow-Methods "POST, OPTIONS";
-    	add_header Access-Control-Allow-Headers "Content-Type";
-   }
+# 	location /api/mag-search {
+#     	proxy_pass https://www.magisterium.com/api/v1/search;
+#     	proxy_set_header Authorization "Bearer ${MAGISTERIUM_API_KEY}";
+#    		proxy_set_header Content-Type "application/json";
+#     	proxy_set_header Host www.magisterium.com;
+#    	 	add_header Access-Control-Allow-Origin "*";
+#     	add_header Access-Control-Allow-Methods "POST, OPTIONS";
+#     	add_header Access-Control-Allow-Headers "Content-Type";
+#    }
     location /api/regolo/ {
-        proxy_pass https://api.regolo.ai/v1/;
+resolver 1.1.1.1 8.8.8.8 valid=60s;
+        set $regolo_backend "api.regolo.ai"; 
+        rewrite ^/api/regolo/(.*)$ /v1/$1 break;
+                proxy_pass https://$regolo_backend;
         proxy_set_header Authorization "Bearer ${REGOLO_API_KEY}";
         proxy_set_header Content-Type "application/json";
         proxy_set_header Host api.regolo.ai;
